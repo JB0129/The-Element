@@ -28,13 +28,24 @@ public class PlayerController : MonoBehaviour
     private void handleMovement()
     {
         if (isDashing) return;
+        if (!controller.isGrounded) return;
 
         float xInput = Input.GetAxisRaw("Horizontal");
         float zInput = Input.GetAxisRaw("Vertical");
 
-        moveDir = transform.right * xInput + transform.forward * zInput;
-        moveDir = Vector3.ClampMagnitude(moveDir, 1f);
+        // // 캐릭 중심 이동
+        // moveDir = transform.right * xInput + transform.forward * zInput;
 
+        // 카메라 중심 이동
+        Vector3 cameraForward = camera.transform.forward;
+        Vector3 cameraRight = camera.transform.right;
+        cameraForward.y = 0f;
+        cameraRight.y = 0f;
+        cameraForward.Normalize();
+        cameraRight.Normalize();
+        moveDir = cameraRight * xInput + cameraForward * zInput;
+
+        moveDir = Vector3.ClampMagnitude(moveDir, 1f);
         controller.Move(moveDir * moveSpeed * Time.deltaTime);
 
         // 중력 처리

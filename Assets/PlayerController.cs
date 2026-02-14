@@ -22,13 +22,13 @@ public class PlayerController : MonoBehaviour
     }
 
     // 1. 일단 WASD로 움직이게 하자
-    [SerializeField]
-    private float moveSpeed = 5f; // 기본 이동속도
+    [SerializeField] private float moveSpeed = 5f; // 기본 이동속도
     Vector3 moveDir;
+    [SerializeField] private float gravity = -9.81f;
+    private float yVelocity;
     private void handleMovement()
     {
         if (isDashing) return;
-        if (!controller.isGrounded) return;
 
         float xInput = Input.GetAxisRaw("Horizontal");
         float zInput = Input.GetAxisRaw("Vertical");
@@ -44,11 +44,16 @@ public class PlayerController : MonoBehaviour
         cameraForward.Normalize();
         cameraRight.Normalize();
         moveDir = cameraRight * xInput + cameraForward * zInput;
-
         moveDir = Vector3.ClampMagnitude(moveDir, 1f);
-        controller.Move(moveDir * moveSpeed * Time.deltaTime);
 
         // 중력 처리
+        if (controller.isGrounded && yVelocity < 0)
+        {
+            yVelocity = -2f; // 땅에 붙이기 
+        }
+        yVelocity += gravity * Time.deltaTime;
+        moveDir.y = yVelocity;
+        controller.Move(moveDir * moveSpeed * Time.deltaTime);
     }
 
 
@@ -70,11 +75,10 @@ public class PlayerController : MonoBehaviour
         camera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
     }
 
+
     // 3. Space 누르면 일정 거리 빠른 이동
-    [SerializeField]
-    private float dashDistance = 5f;
-    [SerializeField]
-    private float dashDuration = 0.3f;
+    [SerializeField] private float dashDistance = 5f;
+    [SerializeField] private float dashDuration = 0.3f;
     private bool isDashing = false;
     private void handleDash()
     {
@@ -86,25 +90,19 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator Dash()
     {
-        // 대쉬 중인가?
-        isDashing = true;
+        isDashing = true; // 대쉬 중인가?
+        Vector3 dashDir; // 대쉬 방향
 
-        // 대쉬 방향
-        Vector3 dashDir;
-
-
-        if (moveDir.magnitude != 0)
+        if (moveDir.magnitude != 0) // moveDir의 길이가 0이 아니라면 = 이동 중이면
         {
-            // 이동 중이면
             dashDir = moveDir.normalized;
         }
-        else
+        else // 멈춰 있으면
         {
-            // 멈춰 있으면
             dashDir = transform.forward;
         }
 
-        // 대쉬 거리/시간/속도
+        // 속도 = 거리 / 시간
         float dashSpeed = dashDistance / dashDuration;
 
         // 경과 시간
@@ -120,9 +118,10 @@ public class PlayerController : MonoBehaviour
         isDashing = false;
     }
 
+
     // 4. Shift 누르면서 이동 시 이동속도 증가
     private float walkSpeed = 5f; // 걸을 때
-    private float runSpeed = 5f; // 달릴 때
+    private float runSpeed = 10f; // 달릴 때
     private void handleSpeedUp()
     {
         if (Input.GetKey(KeyCode.LeftShift))
